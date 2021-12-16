@@ -10,18 +10,18 @@ const checkHero = (req, res, next) => {
   const hero = heroes.find(hero => hero.slug === slug)
 
   if (!hero) {
-    res.status(404).send("Not found")
+    res.status(404).send("Hero not found")
   } else {
     next()
   }
 }
 
-const addHero = (req, res, next) => {
-  const { slug } = req.params
-  const hero = heroes.find(hero => hero.slug === slug)
+const toAddHero = (req, res, next) => {
+  const { name } = req.body
+  const hero = heroes.find(hero => hero.name === name)
 
   if (hero) {
-    res.status(404).send("This hero already exist")
+    res.status(409).send("This hero already exist")
   } else {
     next()
   }
@@ -31,41 +31,41 @@ const validateHero = (req, res, next) => {
   const a = Object.keys(heroes[0])
   const b = Object.keys(req.body)
 
-  if (JSON.stringify(a) === JSON.stringify(b)) {
-    next()
-  } else {
-    res.status(404).send("Not found")
-  }
+ 
 }
 
 
 // GET
 
 app.get("/", (req, res) => {
-    res.json(heroes)
+  res.json(heroes)
 })
 
 app.get("/:slug", checkHero, (req, res) => {
   const { slug } = req.params
+  // = const slug = req.params.slug
   const hero = heroes.find(hero => hero.slug === slug)
+
   res.json(hero)
 })
 
 app.get("/:slug/powers", checkHero, (req, res) => {
   const { slug } = req.params
   const hero = heroes.find(hero => hero.slug === slug)
-  const power = hero.power.map (e => e)
-  res.json(power)
+
+  res.json(hero.power)
 })
 
 
 // POST
 
-app.post("/:slug", addHero, (req, res) => {
+app.post("/", toAddHero, (req, res) => {
   const hero = {
-    ...req.body
+    slug: req.body.name.toLowerCase(),
+    ...req.body 
   }
   heroes = [ ...heroes, hero ]
+
   res.json(hero)
 })
 
@@ -74,11 +74,17 @@ app.post("/:slug", addHero, (req, res) => {
 
 app.put("/:slug", validateHero, (req, res) => {
   const { slug } = req.params
-  const index = heroes.findIndex(hero => hero.slug === slug)
-  hero = {
+  const hero = {
     ...req.body
   }
-  heroes.splice(index, 1, hero)
+  const index = heroes.findIndex(hero => hero.slug === slug)
+  // heroes.splice(index, 1, hero)
+
+  heroes[index] = {
+    ...heroes[index],
+    ...req.body,
+  }
+
   res.json(hero)
 })
 
@@ -94,18 +100,19 @@ app.put("/:slug/powers", checkHero, (req, res) => {
 
 // DELETE
 
-app.delete("/:slug", validateHero, (req, res) => {
+app.delete("/:slug", checkHero,  (req, res) => {
   const { slug } = req.params
   const hero = heroes.find(hero => hero.slug === slug)
   heroes = heroes.filter(hero => hero.slug !== slug)
+
   res.json(`${hero.name} a été effacé`)
 })
 
 app.delete("/:slug/power/:power", checkHero, (req, res) => {
   const { slug, power } = req.params
   let hero = heroes.find(hero => hero.slug === slug)
-  newPowers = hero.power.filter(e => e !== power)
-  hero.power = newPowers
+  hero.power = hero.power.filter(p => p !== power)
+
   res.json(`Le pouvoir ${power} de ${hero.name} a été effacé`)
 })
 
